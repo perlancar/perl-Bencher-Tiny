@@ -43,12 +43,12 @@ _
         warn "Error in parsing command-line options, exiting\n";
         exit 99;
     }
-    unless ($Opts{count}) {
-        warn "Please specify --count (-c), e.g. -c 1000 or -c -0.25\n";
-        exit 99;
-    }
     if (@ARGV != 1) {
         warn "Please specify a single scenario module\n";
+        exit 99;
+    }
+    unless ($Opts{count}) {
+        warn "Please specify --count (-c), e.g. -c 1000 or -c -0.25\n";
         exit 99;
     }
 }
