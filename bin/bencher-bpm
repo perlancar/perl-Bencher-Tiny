@@ -1,0 +1,242 @@
+#!perl
+
+# DATE
+# VERSION
+
+use 5.010001;
+use strict 'subs', 'vars';
+use warnings;
+
+my $DEBUG = $ENV{DEBUG};
+
+my %Opts = (
+    count => undef,
+    mode  => 'cmp',
+);
+
+sub parse_options {
+    require Getopt::Long;
+    Getopt::Long::Configure(
+        "no_ignore_case", "permute", "bundling", "no_getopt_compat");
+    my $res = Getopt::Long::GetOptions(
+        'help|h|?' => sub {
+            print <<'_';
+Usage:
+  bencher-bpm [options] <scenario-name>
+  bencher-bpm --help|-h|-?
+Options:
+  --count, -c   Set count
+  --time        Use timethese() instead of cmpthese()
+_
+            exit 0;
+        },
+        'version|v' => sub {
+            no warnings 'once';
+            print "bencher-bpm version ",
+                ($main::VERSION ? $main::VERSION : 'dev'), "\n";
+            exit 0;
+        },
+        'count|c=i' => \$Opts{count},
+        'time' => sub { $Opts{mode} = 'time' },
+    );
+    unless ($res) {
+        warn "Error in parsing command-line options, exiting\n";
+        exit 99;
+    }
+    unless ($Opts{count}) {
+        warn "Please specify --count (-c), e.g. -c 1000 or -c -0.25\n";
+        exit 99;
+    }
+    if (@ARGV != 1) {
+        warn "Please specify a single scenario module\n";
+        exit 99;
+    }
+}
+
+sub load_scenario {
+    my $mod = "Bencher::Scenario::$ARGV[0]";
+    (my $mod_pm = "$mod.pm") =~ s!::!/!g;
+    require $mod_pm;
+    my $scenario = ${"$mod\::scenario"};
+    die "No scenario found in module $mod\n" unless ref($scenario) eq 'HASH';
+    $scenario;
+}
+
+sub dmp {
+    no warnings 'once';
+    require Data::Dumper;
+    local $Data::Dumper::Terse = 1;
+    local $Data::Dumper::Indent = 0;
+    local $Data::Dumper::SortKeys = 1;
+    Data::Dumper::Dumper(shift);
+}
+
+sub fill_template {
+    my ($t, $vars) = @_;
+    $t =~ s{<(\w+)(:raw)?>}
+           { $2 ? "$vars->{$1}" : dmp($vars->{$1}) }eg;
+    $t;
+}
+
+my %mem;
+sub gen_item {
+    my ($participant, $dataset, $seq) = @_;
+
+    # determine module & function
+    my ($module, $function);
+    {
+        $module = $participant->{module};
+        $function = $participant->{function};
+        last if $module;
+        if ($participant->{fcall_template}) {
+            $participant->{fcall_template} =~ /\A(\w+(?:::\w+)*)(?:::|->)(\w+)/
+                or die "Invalid syntax in fcall_template '$participant->{fcall_template}': can't extract module & function\n";
+            $module = $1;
+            $function = $2;
+        }
+    }
+
+    # generate code by filling in code template
+    my $code;
+    {
+        $code = $participant->{code};
+        last if $code;
+        if (my $t = $participant->{fcall_template} || $participant->{code_template}) {
+            my $code_str = "sub { ". fill_template($t, $dataset->{args}) . "}";
+            # XXX support argv
+            $code = eval $code_str;
+            die "Can't compile '$code_str': $@" if $@;
+        } else {
+            die "Unsupported participant type in participant #$participant->{seq}\n";
+        }
+        # XXX cmdline, cmdline_template
+        # XXX perl_cmdline, perl_cmdline_template
+    }
+
+    # determine appropriate name
+    my $name;
+    {
+        $name = $participant->{name};
+        last if $name;
+        if ($module && $function) {
+            $name = "$module\::$function";
+            last;
+        } elsif ($module) {
+            $name = $module;
+            last;
+        } else {
+            $name = "#$seq";
+        }
+    }
+
+    # make name unique
+    {
+        last unless $mem{$name};
+        my $i = 2;
+        while (1) {
+            my $name2 = "$name #$i";
+            $i++;
+            next if $mem{$name2};
+            $name = $name2;
+            last;
+        }
+        $mem{$name}++;
+    }
+
+    +{
+        name => $name,
+        (module   => $module  ) x !!defined($module),
+        (function => $function) x !!defined($function),
+        code => $code,
+    };
+}
+
+sub gen_items {
+    my $scenario = shift;
+
+    my $participants = $scenario->{participants};
+    die "Scenario doesn't have any participants\n"
+        unless $participants && @$participants;
+    my $datasets = $scenario->{datasets};
+
+    my @items;
+    my $seq_p = 0;
+    my $seq_i = 0;
+    for my $participant (@$participants) {
+        $participant->{seq} = $seq_p++;
+        if ($datasets && @$datasets) {
+            for my $dataset (@$datasets) {
+                push @items, gen_item($participant, $dataset, $seq_i++);
+            }
+        } else {
+            push @items, gen_item($participant, undef, $seq_i++);
+        }
+    }
+
+    \@items;
+}
+
+sub bench_items {
+    require Benchmark;
+
+    my $items = shift;
+
+    # load modules first
+    for my $item (@$items) {
+        my $mod = $item->{module} or next;
+        (my $mod_pm = "$mod.pm") =~ s!::!/!g;
+        print "DEBUG: Loading module '$mod' ...\n" if $DEBUG;
+        require $mod_pm;
+    }
+
+    my $func = $Opts{mode} eq 'time' ? 'timethese' : 'cmpthese';
+
+    &{"Benchmark::$func"}(
+        $Opts{count}, {
+            map { ($_->{name} => $_->{code}) } @$items,
+        },
+    );
+}
+
+sub run {
+    my $scenario = load_scenario();
+    my $items = gen_items($scenario);
+    bench_items($items);
+}
+
+parse_options();
+run();
+
+# ABSTRACT: Simple script to run benchmark scenario with Benchmark.pm
+# PODNAME:
+
+=head1 SYNOPSIS
+
+ % bencher-bpm -c 1000 RefUtil
+
+
+=head1 DESCRIPTION
+
+L<bencher> is a simple script to run benchmark scenario with L<Benchmark>
+(Benchmark.pm). It lacks L<bencher> features like filtering
+participants/datasets/modules, listing participants/datasets or other actions.
+But it is small and does not have any non-core dependency.
+
+
+=head1 ENVIRONMENT
+
+=head2 DEBUG => bool
+
+Will print debug messages when set to true.
+
+
+=head1 EXIT CODES
+
+0 on success.
+
+99 on command-line options error.
+
+
+=head1 SEE ALSO
+
+L<bencher>
