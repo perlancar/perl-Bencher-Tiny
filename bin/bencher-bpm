@@ -212,7 +212,19 @@ run();
 
 =head1 SYNOPSIS
 
- % bencher-bpm -c 1000 RefUtil
+ % bencher-bpm -c 10000 RefUtil
+                      Rate reftype(ARRAY) is_plain_arrayref is_arrayref ref(ARRAY)
+ reftype(ARRAY)    11905/s             --              -36%        -42%       -43%
+ is_plain_arrayref 18519/s            56%                --         -9%       -11%
+ is_arrayref       20408/s            71%               10%          --        -2%
+ ref(ARRAY)        20833/s            75%               12%          2%         --
+
+ % bencher-bpm -c 10000 RefUtil --time
+ Benchmark: timing 10000 iterations of is_arrayref, is_plain_arrayref, ref(ARRAY), reftype(ARRAY)...
+ is_arrayref:  1 wallclock secs ( 0.48 usr +  0.00 sys =  0.48 CPU) @ 20833.33/s (n=10000)
+ is_plain_arrayref:  0 wallclock secs ( 0.51 usr +  0.00 sys =  0.51 CPU) @ 19607.84/s (n=10000)
+ ref(ARRAY):  1 wallclock secs ( 0.49 usr +  0.00 sys =  0.49 CPU) @ 20408.16/s (n=10000)
+ reftype(ARRAY):  1 wallclock secs ( 0.84 usr +  0.00 sys =  0.84 CPU) @ 11904.76/s (n=10000)
 
 
 =head1 DESCRIPTION
@@ -221,6 +233,17 @@ L<bencher> is a simple script to run benchmark scenario with L<Benchmark>
 (Benchmark.pm). It lacks L<bencher> features like filtering
 participants/datasets/modules, listing participants/datasets or other actions.
 But it is small and does not have any non-core dependency.
+
+
+=head1 OPTIONS
+
+=head2 --count=i, -c
+
+Specify count to pass to C<cmpthese()>.
+
+==head2 --time
+
+Use C<timethese()> instead of C<cmpthese()>.
 
 
 =head1 ENVIRONMENT
