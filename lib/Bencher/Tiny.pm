@@ -1,4 +1,4 @@
-package Bencher::BPM;
+package Bencher::Tiny;
 
 # DATE
 # VERSION
@@ -8,7 +8,7 @@ package Bencher::BPM;
 
 =head1 DESCRIPTION
 
-This distribution includes the script L<bencher-bpm> to run benchmark scenario
+This distribution includes the script L<bencher-tiny> to run benchmark scenario
 with L<Benchmark> (Benchmark.pm). It lacks L<bencher> features like filtering
 participants/datasets/modules, listing participants/datasets or other actions.
 But it is small and does not have any non-core dependency.

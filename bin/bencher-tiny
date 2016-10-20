@@ -22,8 +22,8 @@ sub parse_options {
         'help|h|?' => sub {
             print <<'_';
 Usage:
-  bencher-bpm [options] <scenario-name>
-  bencher-bpm --help|-h|-?
+  bencher-tiny [options] <scenario-name>
+  bencher-tiny --help|-h|-?
 Options:
   --count, -c   Set count
   --timethese   Use timethese() instead of cmpthese()
@@ -32,7 +32,7 @@ _
         },
         'version|v' => sub {
             no warnings 'once';
-            print "bencher-bpm version ",
+            print "bencher-tiny version ",
                 ($main::VERSION ? $main::VERSION : 'dev'), "\n";
             exit 0;
         },
@@ -215,14 +215,14 @@ run();
 
 After you install L<Bencher::Scenario::RefUtil>:
 
- % bencher-bpm -c 10000 RefUtil
+ % bencher-tiny -c 10000 RefUtil
                       Rate reftype(ARRAY) is_plain_arrayref is_arrayref ref(ARRAY)
  reftype(ARRAY)    11905/s             --              -36%        -42%       -43%
  is_plain_arrayref 18519/s            56%                --         -9%       -11%
  is_arrayref       20408/s            71%               10%          --        -2%
  ref(ARRAY)        20833/s            75%               12%          2%         --
 
- % bencher-bpm -c 10000 RefUtil --timethese
+ % bencher-tiny -c 10000 RefUtil --timethese
  Benchmark: timing 10000 iterations of is_arrayref, is_plain_arrayref, ref(ARRAY), reftype(ARRAY)...
  is_arrayref:  1 wallclock secs ( 0.48 usr +  0.00 sys =  0.48 CPU) @ 20833.33/s (n=10000)
  is_plain_arrayref:  0 wallclock secs ( 0.51 usr +  0.00 sys =  0.51 CPU) @ 19607.84/s (n=10000)
