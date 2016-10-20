@@ -37,6 +37,7 @@ _
             exit 0;
         },
         'count|c=i' => \$Opts{count},
+        'cmpthese' => sub { $Opts{mode} = 'cmpthese' },
         'timethese' => sub { $Opts{mode} = 'timethese' },
     );
     unless ($res) {
@@ -244,6 +245,11 @@ Specify count to pass to C<cmpthese()>.
 ==head2 --timethese
 
 Use C<timethese()> instead of C<cmpthese()>.
+
+==head2 --cmpthese
+
+Use C<cmpthese()> (the default, so normally it is not necessary to use this
+option).
 
 
 =head1 ENVIRONMENT
