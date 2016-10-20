@@ -244,11 +244,11 @@ But it is small and does not have any non-core dependency.
 
 Specify count to pass to C<cmpthese()>.
 
-==head2 --timethese
+=head2 --timethese
 
 Use C<timethese()> instead of C<cmpthese()>.
 
-==head2 --cmpthese
+=head2 --cmpthese
 
 Use C<cmpthese()> (the default, so normally it is not necessary to use this
 option).
