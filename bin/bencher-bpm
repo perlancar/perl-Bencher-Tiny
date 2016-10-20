@@ -11,7 +11,7 @@ my $DEBUG = $ENV{DEBUG};
 
 my %Opts = (
     count => undef,
-    mode  => 'cmp',
+    mode  => 'cmpthese',
 );
 
 sub parse_options {
@@ -26,7 +26,7 @@ Usage:
   bencher-bpm --help|-h|-?
 Options:
   --count, -c   Set count
-  --time        Use timethese() instead of cmpthese()
+  --timethese   Use timethese() instead of cmpthese()
 _
             exit 0;
         },
@@ -37,7 +37,7 @@ _
             exit 0;
         },
         'count|c=i' => \$Opts{count},
-        'time' => sub { $Opts{mode} = 'time' },
+        'timethese' => sub { $Opts{mode} = 'timethese' },
     );
     unless ($res) {
         warn "Error in parsing command-line options, exiting\n";
@@ -189,7 +189,7 @@ sub bench_items {
         require $mod_pm;
     }
 
-    my $func = $Opts{mode} eq 'time' ? 'timethese' : 'cmpthese';
+    my $func = $Opts{mode} eq 'timethese' ? 'timethese' : 'cmpthese';
 
     &{"Benchmark::$func"}(
         $Opts{count}, {
@@ -219,7 +219,7 @@ run();
  is_arrayref       20408/s            71%               10%          --        -2%
  ref(ARRAY)        20833/s            75%               12%          2%         --
 
- % bencher-bpm -c 10000 RefUtil --time
+ % bencher-bpm -c 10000 RefUtil --timethese
  Benchmark: timing 10000 iterations of is_arrayref, is_plain_arrayref, ref(ARRAY), reftype(ARRAY)...
  is_arrayref:  1 wallclock secs ( 0.48 usr +  0.00 sys =  0.48 CPU) @ 20833.33/s (n=10000)
  is_plain_arrayref:  0 wallclock secs ( 0.51 usr +  0.00 sys =  0.51 CPU) @ 19607.84/s (n=10000)
@@ -241,7 +241,7 @@ But it is small and does not have any non-core dependency.
 
 Specify count to pass to C<cmpthese()>.
 
-==head2 --time
+==head2 --timethese
 
 Use C<timethese()> instead of C<cmpthese()>.
 
