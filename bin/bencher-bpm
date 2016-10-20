@@ -213,6 +213,8 @@ run();
 
 =head1 SYNOPSIS
 
+After you install L<Bencher::Scenario::RefUtil>:
+
  % bencher-bpm -c 10000 RefUtil
                       Rate reftype(ARRAY) is_plain_arrayref is_arrayref ref(ARRAY)
  reftype(ARRAY)    11905/s             --              -36%        -42%       -43%
